@@ -188,6 +188,11 @@ else:
 search_result = {}
 search_result['song'] = []
 
+try:
+    if not os.path.exists("./music_image"):
+        os.makedirs("./music_image")
+except OSError:
+    print('Error: Creating directory.'+"./music_image")
 os.chdir("./music_image")
 def search_songs(results):
     
@@ -316,8 +321,4 @@ if(len(search_result['song']) < 10):
 #print(search_result)
 print(len(search_result['song']))
 with open("./result.json", 'w') as outfile:
-<<<<<<< HEAD
   json.dump(search_result, outfile, indent=8)
-=======
-    json.dump(data, outfile, indent=8)
->>>>>>> 5bfdaeebbdce55a2ac80544899fb3ffe656d0022
