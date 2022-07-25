@@ -6,4 +6,4 @@ pip install spotipy\
 pip install torch torchvision\
 \
 \
-Please write the Spotiy ID and secret
+Please change the Spotiy ID and secret in code
