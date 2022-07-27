@@ -46,6 +46,8 @@ from torchvision import transforms
 import torch.nn as nn #추가
 import torch.nn.functional as F #추가
 
+import tensorflow as tf
+
 class Net(nn.Module): #추가
     def __init__(self):
         super().__init__()
@@ -81,7 +83,10 @@ class Net(nn.Module): #추가
         x = self.dropout2(x)
         x = F.relu(self.fc2(x))
         x = self.dropout2(x)
-        x = F.softmax(self.fc3(x), dim=0)
+        if(batch_size > 1):
+            x = F.softmax(self.fc4(x), dim=1)
+        else:
+            x = F.softmax(self.fc4(x), dim=0)
         return x
 
 
@@ -122,7 +127,7 @@ text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in text]).to(d
 PATH = './moodmodel.pth'
 batch_size = 1
 
-
+'''
 net = Net().to(device)
 net.load_state_dict(torch.load(PATH, map_location = device))
 net.to(device)
@@ -137,6 +142,13 @@ outputs = net(transform(image).to(device))
 predicted = np.argmax(np.array(outputs.tolist()))
 print("mood: " + classes[predicted])
 mood = classes[predicted]
+'''
+
+#바뀐코드 3줄
+mood_model_keras = tf.keras.models.load_model('./moodmodel_keras_2.h5')
+print("keras: "+classes[np.argmax(mood_model_keras(np.expand_dims(np.array(image.resize((192,192))), axis=0)).numpy())])
+mood = classes[np.argmax(mood_model_keras(np.expand_dims(np.array(image.resize((192,192))), axis=0)).numpy())]
+
 # Calculate features
 with torch.no_grad():
     image_features = model.encode_image(image_input)
@@ -154,21 +166,21 @@ values, indices = similarity[0].topk(5)
 
 # Print the result
 #print("\nTop predictions:\n")
-n = 0
+keyword = []
 for value, index in zip(values, indices):
-    if n==0:
-        keyword = text[index]
+    
+    keyword.append(text[index])
         
-    n= n+1
     print(f"{text[index]:>16s}: {100 * value.item():.2f}%%")
 
-print("keyword: "+keyword)
+print(keyword)
 #print(keyword)
 #results = sp.search(q="Music for camping"+" genre: pop", limit=20)
 #results = sp.search(q="우울할 때 듣는 음악", limit=20)
 #results = sp.search(q="Music for "+keyword, limit=20)
 #results = sp.search(q=keyword+" music", limit=20)
 genre = None #hip-hop, pop, rock .....
+
 
 if(genre == None):
   results = sp.search(q=keyword, limit=50)
@@ -187,13 +199,14 @@ else:
 
 search_result = {}
 search_result['song'] = []
-
+'''
 try:
     if not os.path.exists("./music_image"):
         os.makedirs("./music_image")
 except OSError:
     print('Error: Creating directory.'+"./music_image")
 os.chdir("./music_image")
+'''
 def search_songs(results):
     
   data = {}
@@ -278,46 +291,15 @@ data = search_songs(results)
 #print(get_features(data['song'][0]['title']))
 search_result = music_classification(data, search_result)
 
-
-if(len(search_result['song']) < 10):
-  results = sp.search(q="song",limit=50)
-  #print(results)
-
-  data = search_songs(results)
-  search_result = music_classification(data, search_result)
-
-  #print(search_result)
-  #print(len(search_result['song']))
+for i in range(0,4):
   if(len(search_result['song']) < 10):
-    results = sp.search(q="music",limit=50)
+    results = sp.search(q=keyword[i],limit=50)
     #print(results)
 
     data = search_songs(results)
     search_result = music_classification(data, search_result)
 
-    #print(search_result)
-    #print(len(search_result['song']))
-    if(len(search_result['song']) < 10):
-      results = sp.search(q=mood,limit=50)
-      #print(results)
 
-      data = search_songs(results)
-      search_result = music_classification(data, search_result)
-
-      #print(search_result)
-      #print(len(search_result['song']))
-      if(len(search_result['song']) < 10):
-        results = sp.search(q="songs",limit=50)
-        #print(results)
-
-        data = search_songs(results)
-        search_result = music_classification(data, search_result)
-
-        #print(search_result)
-        #print(len(search_result['song']))
-        
-
-      
 #print(search_result)
 print(len(search_result['song']))
 with open("./result.json", 'w') as outfile:
